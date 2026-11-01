@@ -1,0 +1,70 @@
+services:
+
+  postgres:
+    image: postgres:16
+
+    ports:
+      - "5433:5432"
+    #   - "5432:5432"
+
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+
+  airflow:
+    image: apache/airflow:3.2.1
+
+    depends_on:
+      - postgres
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      # AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+
+      # TZ: Asia/Kolkata
+      # _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-smtp
+      _PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-smtp matplotlib yfinance
+
+      # PostgreSQL ENV VARIABLES
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+
+      # Kafka PostgreSQL connection
+      KAFKA_HOST: ${KAFKA_HOST:-host.docker.internal}
+      KAFKA_DB: ${KAFKA_DB:-kafka_db}
+      KAFKA_USER: ${KAFKA_USER:-postgres}
+      KAFKA_PASSWORD: ${KAFKA_PASSWORD:?Set KAFKA_PASSWORD in Airflow .env}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5434}
+
+      # SMTP Email Config
+      AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
+      AIRFLOW__SMTP__SMTP_STARTTLS: "True"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_USER: abc@gmail.com
+      AIRFLOW__SMTP__SMTP_PASSWORD: "abc-dcd"
+      AIRFLOW__SMTP__SMTP_PORT: 587
+      AIRFLOW__SMTP__SMTP_MAIL_FROM: abc@gmail.com
+      ALERT_EMAIL: abc@gmail.com
+
+    command: standalone
+
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+volumes:
+  postgres-db-volume:

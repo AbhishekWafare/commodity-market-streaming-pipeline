@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS commodity_prices (
+    id BIGSERIAL PRIMARY KEY,
+    commodity VARCHAR(50) NOT NULL,
+    price NUMERIC(18,6) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL
+);

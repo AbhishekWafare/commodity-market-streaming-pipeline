@@ -1,0 +1,35 @@
+# Environment files and secrets
+.env
+**/.env
+!.env.example
+!**/.env.example
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Airflow runtime logs
+Airflow/logs/
+
+#Notes
+Notes
+
+# Generated reports
+Airflow/reports/*.csv
+!Airflow/reports/.gitkeep
+
+# Log files
+*.log
+
+# IDE settings
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
