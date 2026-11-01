@@ -219,6 +219,12 @@ Open Kafka UI:
 - Kafka broker from Python running on Windows: `127.0.0.1:9092`
 - Kafka broker from containers on the Compose network: `kafka:29092`
 
+Curl to Check kafka UI is running or not:
+
+```bash
+curl -I http://localhost:8081
+```
+
 ### 3. Start the Airflow stack
 
 Open a second terminal in the repository root and run:
@@ -234,6 +240,12 @@ docker compose -p commodity-airflow ps
 Wait for Airflow initialization and the API server to finish starting. Open:
 
 - Airflow UI: <http://localhost:8080>
+
+Curl to check airflow UI is running or not:
+
+```bash
+curl -I http://localhost:8080
+```
 
 The Airflow 3 Simple Auth Manager generates an initial admin password. Read it locally from the container:
 
