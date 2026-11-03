@@ -19,6 +19,8 @@ Airflow/logs/
 #Notes
 Notes
 
+Kafka/zookeeper-volume-backups/
+
 # Generated reports
 Airflow/reports/*.csv
 !Airflow/reports/.gitkeep
@@ -33,3 +35,10 @@ Airflow/reports/*.csv
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Runtime process IDs
+.runtime/
+
+
+# Git Bash crash dumps
+mintty.exe.stackdump

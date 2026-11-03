@@ -21,24 +21,36 @@ def get_connection():
         port=int(os.getenv("POSTGRES_PORT", "5434"))
     )
 
+print("[1/4] Connecting to PostgreSQL...", flush=True)
 conn = get_connection()
 cursor = conn.cursor()
+print("[SUCCESS] PostgreSQL connected.", flush=True)
 
+
+print("[2/4] Initializing DLQ producer...", flush=True)
 # Dead Letter Queue (DLQ)
 dlq_producer = KafkaProducer(
     bootstrap_servers='127.0.0.1:9092',
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
+print("[SUCCESS] DLQ producer initialized.", flush=True)
+
+# Main Kafka Consumer
+print("[3/4] Initializing Kafka consumer...", flush=True)
+
 consumer = KafkaConsumer(
     'gold-prices',
     'silver-prices',
     'oil-prices',
-    bootstrap_servers='localhost:9092',
+    bootstrap_servers='127.0.0.1:9092',
     auto_offset_reset='earliest',
     group_id='commodity-group',
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
+print("[SUCCESS] Kafka consumer initialized.", flush=True)
+print("[4/4] Waiting for commodity messages...", flush=True)
+
 def send_alert(commodity, price, message):
 
     alert_event = {
@@ -122,15 +134,15 @@ try:
             print("=" * 50)
 
             print(f"\n---- Commodity: {commodity.upper()} ----")
-            print(f"Latest Price: ₹{price}")
+            print(f"Latest Price: {price} {currency}")
             print(f"Currency: {currency}")
             print(f"Timestamp: {timestamp}")
 
             print("\n---- Analytics ----")
             print(f"Total Events: {stats['count']}")
-            print(f"Highest Price: ₹{stats['highest']}")
-            print(f"Lowest Price: ₹{stats['lowest']}")
-            print(f"Average Price: ₹{average_price:.2f}")
+            print(f"Highest Price: {stats['highest']} {currency}")
+            print(f"Lowest Price: {stats['lowest']} {currency}")
+            print(f"Average Price: {average_price:.2f} {currency}")
 
             cursor.execute(
                     """

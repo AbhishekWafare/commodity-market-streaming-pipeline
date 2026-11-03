@@ -7,9 +7,13 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log_data:/var/lib/zookeeper/log
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    stop_grace_period: 60s
     depends_on:
       - zookeeper
     volumes:
@@ -57,3 +61,10 @@ services:
 volumes:
   kafka_data:
   postgres_data:
+  zookeeper_data:
+    external: true
+    name: commodity-kafka_zookeeper_data
+
+  zookeeper_log_data:
+    external: true
+    name: commodity-kafka_zookeeper_log_data
