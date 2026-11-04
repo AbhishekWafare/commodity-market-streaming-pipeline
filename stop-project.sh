@@ -138,16 +138,22 @@ stop_terminal() {
     echo "WARNING: Could not confirm $component terminal shutdown."
 }
 
-# 1. Stop Consumer and Producer.
+# 1. Stop Dashboard, Producer and Consumer.
+
 stop_terminal \
-    "consumer" \
-    "Commodity Consumer" \
-    "$RUNTIME_DIR/consumer-terminal.pid"
+    "dashboard" \
+    "Commodity Dashboard" \
+    "$RUNTIME_DIR/dashboard-terminal.pid"
 
 stop_terminal \
     "producer" \
     "Commodity Producer" \
     "$RUNTIME_DIR/producer-terminal.pid"
+
+stop_terminal \
+    "consumer" \
+    "Commodity Consumer" \
+    "$RUNTIME_DIR/consumer-terminal.pid"
 
 # 2. Stop Airflow.
 echo

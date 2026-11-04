@@ -7,6 +7,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 KAFKA_DIR="$PROJECT_DIR/Kafka"
 AIRFLOW_DIR="$PROJECT_DIR/Airflow"
+DASHBOARD_DIR="$PROJECT_DIR/Dashboard"
 
 RUNTIME_DIR="$PROJECT_DIR/.runtime"
 mkdir -p "$RUNTIME_DIR"
@@ -73,14 +74,33 @@ for file in "$KAFKA_DIR/.env" "$AIRFLOW_DIR/.env"; do
     fi
 done
 
-# Prevent duplicate consumer/producer terminals.
-for component in consumer producer; do
+if [[ ! -f "$DASHBOARD_DIR/commodity.py" ]]; then
+    echo "ERROR: Dashboard/commodity.py not found."
+    exit 1
+fi
 
-    if [[ "$component" == "consumer" ]]; then
-        TITLE="Commodity Consumer"
-    else
-        TITLE="Commodity Producer"
-    fi
+# Verify dashboard dependencies before starting infrastructure.
+if ! python -c "import streamlit, pandas, psycopg2" >/dev/null 2>&1; then
+    echo "ERROR: Dashboard dependencies are missing."
+    echo "Install using:"
+    echo "python -m pip install streamlit pandas psycopg2-binary"
+    exit 1
+fi
+
+# Prevent duplicate consumer/producer terminals.
+for component in consumer producer dashboard; do
+
+    case "$component" in
+        consumer)
+            TITLE="Commodity Consumer"
+            ;;
+        producer)
+            TITLE="Commodity Producer"
+            ;;
+        dashboard)
+            TITLE="Commodity Dashboard"
+            ;;
+    esac
 
     EXISTING_PID="$(find_mintty_pid "$TITLE")"
 
@@ -99,7 +119,7 @@ docker volume create commodity-kafka_zookeeper_log_data >/dev/null
 
 # Start Kafka infrastructure
 echo
-echo "[1/4] Starting Kafka infrastructure..."
+echo "[1/5] Starting Kafka infrastructure..."
 
 (
     cd "$KAFKA_DIR"
@@ -144,7 +164,7 @@ echo "Kafka is healthy!"
 
 # Start Airflow infrastructure
 echo
-echo "[2/4] Starting Airflow infrastructure..."
+echo "[2/5] Starting Airflow infrastructure..."
 
 (
     cd "$AIRFLOW_DIR"
@@ -203,7 +223,7 @@ echo
 
 # Launch the consumer in a separate Git Bash window
 echo
-echo "[3/4] Starting commodity consumer..."
+echo "[3/5] Starting commodity consumer..."
 
 mintty --title="Commodity Consumer" bash -lc '
     cd "$1" || exit 1
@@ -248,7 +268,7 @@ sleep 3
 
 # Launch the producer in another Git Bash window
 echo
-echo "[4/4] Starting commodity producer..."
+echo "[4/5] Starting commodity producer..."
 
 mintty --title="Commodity Producer" bash -lc '
     cd "$1" || exit 1
@@ -277,6 +297,53 @@ for attempt in {1..30}; do
 
     sleep 1
 done
+
+# Launch Streamlit dashboard
+echo
+echo "[5/5] Starting Streamlit dashboard..."
+
+mintty --title="Commodity Dashboard" bash -lc '
+    cd "$1" || exit 1
+
+    set -a
+    source .env
+    set +a
+
+    echo "Starting Streamlit dashboard..."
+    python -u -m streamlit run "$2/commodity.py" \
+        --server.address 127.0.0.1 \
+        --server.port 8501
+
+    status=$?
+    echo
+    echo "Dashboard exited with status: $status"
+    read -r -p "Press Enter to close this window..."
+' bash "$KAFKA_DIR" "$DASHBOARD_DIR" &
+
+DASHBOARD_TERMINAL_PID=""
+
+for attempt in {1..30}; do
+
+    DASHBOARD_TERMINAL_PID="$(find_mintty_pid "Commodity Dashboard")"
+
+    if [[ "$DASHBOARD_TERMINAL_PID" =~ ^[0-9]+$ ]]; then
+        break
+    fi
+
+    sleep 1
+done
+
+if [[ ! "$DASHBOARD_TERMINAL_PID" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Could not identify Dashboard terminal PID."
+    exit 1
+fi
+
+printf '%s\n' "$DASHBOARD_TERMINAL_PID" \
+    > "$RUNTIME_DIR/dashboard-terminal.pid"
+
+echo "Dashboard terminal PID: $DASHBOARD_TERMINAL_PID"
+
+echo "Dashboard URL: http://localhost:8501"
 
 if [[ ! "$PRODUCER_TERMINAL_PID" =~ ^[0-9]+$ ]]; then
     echo "ERROR: Could not identify Producer terminal PID."
